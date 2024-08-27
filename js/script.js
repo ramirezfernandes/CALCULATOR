@@ -14,9 +14,13 @@ let operator = ""; // Variáveis para armazenar o o operador
 let history = ""; // Variáveis para armazenar o histórico da operação
 let restart = false; // Flag para reiniciar o número atual após uma operação
 
-// Atualiza o valor exibido no resultado, formatando a exibição se necessário
+// Atualiza o valor exibido no "result" para o "currentNumber" ou formata para 0 quando clicado em C
 function updateResult(originClear = false) {
-  result.innerText = originClear ? 0 : currentNumber.replace(".", ",");
+  if (originClear) {
+    result.innerText = 0; // Se originClear for "true", o resultado é 0
+  } else {
+    result.innerText = currentNumber.replace(".", ","); // Se originClear for false, exibe currentNumber formatado
+  }
 }
 
 // Atualiza o histórico de operações exibido
@@ -42,7 +46,7 @@ function addDigit(digit) {
 function setOperator(newOperator) {
   if (restart) { // Se estiver reiniciando, o número anterior é definido como o número atual
     previousNumber = currentNumber;
-    history = currentNumber + " " + newOperator;
+    history = currentNumber + " " + newOperator+ " ";
     restart = false;
   } else {
     if (previousNumber && operator && currentNumber) {
@@ -91,13 +95,17 @@ function calculate(finalCalculation = true) {
   updateResult(); // Atualiza a exibição do resultado
 
   if (finalCalculation) {
+
     history += ` = ${currentNumber}`; // Adiciona o resultado ao histórico
     updateHistory(); // Atualiza a exibição do histórico
     resetCalculator(false); // Reseta a calculadora, mantendo o histórico
+
   } else {
+
     previousNumber = currentNumber; // Caso não seja o cálculo final, armazena o resultado como número anterior
     currentNumber = ""; // Reseta o número atual
     updateHistory(); // Atualiza a exibição do histórico
+
   }
 }
 
@@ -135,21 +143,33 @@ function setPercentage() {
 buttons.forEach((button) => {
   button.addEventListener("click", () => {
     const buttonText = button.innerText; // Obtém o texto do botão clicado
-    if (/^[0-9,]+$/.test(buttonText)) { // Verifica se o botão clicado é um número ou vírgula
+    if (/^[0-9,]+$/.test(buttonText)) { // Verifica se o botão clicado é um número ou vírgula com regex
+
       addDigit(buttonText); // Adiciona o dígito ao número atual
+
     } else if (["+", "-", "×", "÷"].includes(buttonText)) { // Verifica se o botão clicado é um operador
+
       setOperator(buttonText); // Define o operador
+
     } else if (buttonText === "=") { // Verifica se o botão clicado é o botão de igual
+
       calculate(); // Realiza o cálculo
+
     } else if (buttonText === "C") { // Verifica se o botão clicado é o botão de limpar
+
       clearCalculator(); // Limpa a calculadora
+
     } else if (buttonText === "±") { // Verifica se o botão clicado é o botão de mudar o sinal do número
+
       currentNumber = (parseFloat(currentNumber || "0") * -1).toString().replace(".", ",");
       updateResult(); // Atualiza o resultado com o novo valor
+
     } else if (buttonText === "%") { // Verifica se o botão clicado é o botão de porcentagem
+
       setPercentage(); // Calcula a porcentagem
       history += " %"; // Adiciona o símbolo de porcentagem ao histórico
       updateHistory(); // Atualiza o histórico corretamente
+
     }
   });
 });
