@@ -3,80 +3,106 @@ const calculationDiv = document.getElementById("calculation");
 const buttons = document.querySelectorAll(".buttons button");
 
 let currentNumber = "";
-let calculation = ""; // Armazena o cálculo completo
-let lastOperator = null; // Armazena o último operador usado
-let restart = false; // Controla se o cálculo deve reiniciar
+let previousNumber = "";
+let operator = "";
+let history = "";
+let restart = false;
 
 function updateResult(originClear = false) {
   result.innerText = originClear ? 0 : currentNumber.replace(".", ",");
 }
 
-function updateCalculation() {
-  calculationDiv.innerText = calculation; // Atualiza o cálculo exibido
+function updateHistory() {
+  calculationDiv.innerText = history;
 }
 
 function addDigit(digit) {
-  if (digit === "," && (currentNumber.includes(",") || !currentNumber)) return;
-
   if (restart) {
     currentNumber = digit;
     restart = false;
+    history = ""; // Reseta o histórico ao iniciar nova operação
   } else {
     currentNumber += digit;
   }
+  
+  history += digit; // Adiciona o dígito ao histórico
   updateResult();
+  updateHistory(); // Atualiza o histórico enquanto digita
 }
 
 function setOperator(newOperator) {
-  if (currentNumber) {
-    if (lastOperator && !restart) {
-      calculation += ` ${currentNumber.replace(",", ".")}`;
-      calculate(); // Calcula o resultado parcial
-    } else {
-      calculation += ` ${currentNumber.replace(",", ".")}`;
-    }
+  if (!currentNumber && !previousNumber) return;
+
+  if (previousNumber && currentNumber) {
+    calculate(false);
+  } else if (currentNumber) {
+    previousNumber = currentNumber;
   }
-  calculation += ` ${newOperator}`;
-  lastOperator = newOperator;
+
+  operator = newOperator;
+  history += ` ${operator}`;
   currentNumber = "";
-  restart = false;
-  updateCalculation();
+  updateHistory();
 }
 
-function calculate() {
-  if (!lastOperator || !currentNumber) return; // Previne cálculo se não há novo número ou operador
+function calculate(finalCalculation = true) {
+  if (!previousNumber || !operator || !currentNumber) return;
 
-  calculation += ` ${currentNumber.replace(",", ".")}`;
-  try {
-    const resultValue = eval(calculation.replace(/×/g, "*").replace(/÷/g, "/"));
-    currentNumber = resultValue.toString();
-    updateResult();
-    calculation = currentNumber; // Reinicia o cálculo com o resultado
-    restart = true; // Marca que o próximo dígito deve reiniciar a entrada
-    lastOperator = null; // Reseta o último operador
-    updateCalculation();
-  } catch (error) {
-    result.innerText = "Erro";
-    calculation = ""; // Limpa a expressão
+  const num1 = parseFloat(previousNumber.replace(",", "."));
+  const num2 = parseFloat(currentNumber.replace(",", "."));
+  let calculationResult;
+
+  switch (operator) {
+    case "+":
+      calculationResult = num1 + num2;
+      break;
+    case "-":
+      calculationResult = num1 - num2;
+      break;
+    case "×":
+      calculationResult = num1 * num2;
+      break;
+    case "÷":
+      calculationResult = num1 / num2;
+      break;
+    default:
+      return;
   }
+
+  currentNumber = calculationResult.toString().replace(".", ",");
+  updateResult();
+  
+  if (finalCalculation) {
+    history += ` = ${currentNumber}`;
+    updateHistory();
+    resetCalculator();
+  } else {
+    previousNumber = currentNumber;
+    history += ` ${currentNumber} ${operator}`;
+    currentNumber = "";
+    updateHistory();
+  }
+}
+
+function resetCalculator() {
+  previousNumber = "";
+  operator = "";
+  restart = true;
 }
 
 function clearCalculator() {
   currentNumber = "";
-  calculation = "";
-  lastOperator = null;
+  previousNumber = "";
+  operator = "";
+  history = "";
   updateResult(true);
-  updateCalculation();
+  updateHistory();
 }
 
 function setPercentage() {
-  let result = parseFloat(currentNumber) / 100;
-
-  if (lastOperator === "+" || lastOperator === "-") {
-    result *= eval(calculation.replace(/×/g, "*").replace(/÷/g, "/"));
-  }
-
-  currentNumber = result.toString();
+  if (!currentNumber) return;
+  
+  currentNumber = (parseFloat(currentNumber.replace(",", ".")) / 100).toString().replace(".", ",");
   updateResult();
 }
 
@@ -88,13 +114,11 @@ buttons.forEach((button) => {
     } else if (["+", "-", "×", "÷"].includes(buttonText)) {
       setOperator(buttonText);
     } else if (buttonText === "=") {
-      calculate();
+      calculate(); // Calcula o resultado final e exibe o histórico completo
     } else if (buttonText === "C") {
       clearCalculator();
     } else if (buttonText === "±") {
-      currentNumber = (
-        parseFloat(currentNumber || "0") * -1
-      ).toString();
+      currentNumber = (parseFloat(currentNumber || "0") * -1).toString().replace(".", ",");
       updateResult();
     } else if (buttonText === "%") {
       setPercentage();
