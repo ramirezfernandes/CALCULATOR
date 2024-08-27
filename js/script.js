@@ -20,27 +20,31 @@ function addDigit(digit) {
   if (restart) {
     currentNumber = digit;
     restart = false;
-    history = ""; // Reseta o histórico ao iniciar nova operação
   } else {
     currentNumber += digit;
   }
-  
-  history += digit; // Adiciona o dígito ao histórico
+
+  history += digit;
   updateResult();
-  updateHistory(); // Atualiza o histórico enquanto digita
+  updateHistory();
 }
 
 function setOperator(newOperator) {
-  if (!currentNumber && !previousNumber) return;
-
-  if (previousNumber && currentNumber) {
-    calculate(false);
-  } else if (currentNumber) {
+  if (restart) {
     previousNumber = currentNumber;
+    history = currentNumber + " " + newOperator;
+    restart = false;
+  } else {
+    if (previousNumber && operator && currentNumber) {
+      calculate(false);
+    } else if (currentNumber) {
+      previousNumber = currentNumber;
+    }
+
+    history += ` ${newOperator} `;
   }
 
   operator = newOperator;
-  history += ` ${operator}`;
   currentNumber = "";
   updateHistory();
 }
@@ -71,23 +75,23 @@ function calculate(finalCalculation = true) {
 
   currentNumber = calculationResult.toString().replace(".", ",");
   updateResult();
-  
+
   if (finalCalculation) {
     history += ` = ${currentNumber}`;
     updateHistory();
-    resetCalculator();
+    resetCalculator(false);
   } else {
     previousNumber = currentNumber;
-    history += ` ${currentNumber} ${operator}`;
     currentNumber = "";
     updateHistory();
   }
 }
 
-function resetCalculator() {
+function resetCalculator(clearHistory = true) {
   previousNumber = "";
   operator = "";
   restart = true;
+  if (clearHistory) history = "";
 }
 
 function clearCalculator() {
@@ -100,10 +104,13 @@ function clearCalculator() {
 }
 
 function setPercentage() {
-  if (!currentNumber) return;
-  
-  currentNumber = (parseFloat(currentNumber.replace(",", ".")) / 100).toString().replace(".", ",");
-  updateResult();
+  if (!currentNumber || !previousNumber || !operator) return;
+
+  const base = parseFloat(previousNumber.replace(",", "."));
+  const percentage = parseFloat(currentNumber.replace(",", "."));
+  currentNumber = ((base * percentage) / 100).toString().replace(".", ",");
+
+  updateResult(); // Exibe o valor da porcentagem no resultado principal, não no histórico
 }
 
 buttons.forEach((button) => {
@@ -114,7 +121,7 @@ buttons.forEach((button) => {
     } else if (["+", "-", "×", "÷"].includes(buttonText)) {
       setOperator(buttonText);
     } else if (buttonText === "=") {
-      calculate(); // Calcula o resultado final e exibe o histórico completo
+      calculate();
     } else if (buttonText === "C") {
       clearCalculator();
     } else if (buttonText === "±") {
@@ -122,6 +129,8 @@ buttons.forEach((button) => {
       updateResult();
     } else if (buttonText === "%") {
       setPercentage();
+      history += " %"; // Adiciona o símbolo de porcentagem ao histórico
+      updateHistory(); // Atualiza o histórico corretamente
     }
   });
 });
